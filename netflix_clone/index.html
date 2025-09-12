@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Netflix Clone – SPA (offline-ready)</title>
+  <link rel="preload" as="image" href="images/background.jpg">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- HERO / HOME -->
+  <section id="home" class="hero">
+    <div class="overlay"></div>
+    <header class="hero-header">
+      <img src="images/netflix-logo.png" alt="Netflix" class="logo">
+      <a href="#" data-target="register" class="btn-register">Registrace</a>
+    </header>
+    <div class="hero-content">
+      <h1>Neomezené sledování filmů, TV pořadů a dalšího obsahu</h1>
+      <h2>Už od 239 Kč. Zrušte kdykoli.</h2>
+      <p>Jste připraveni se dívat? Pro vytvoření nebo obnovení členství zadejte e-mail.</p>
+      <form class="hero-form" onsubmit="return false">
+        <input type="email" placeholder="E-mailová adresa" required>
+        <button type="submit" class="btn-red" data-target="movies">Začít</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- MOVIES -->
+  <section id="movies" class="section" hidden>
+    <h2 class="visually-hidden">Filmy</h2>
+
+    <!-- featured row (3 big posters) -->
+    <div id="featuredRow" class="featured-row">
+      <img src="images/avengers.jpg" alt="Avengers: Infinity War" />
+      <img src="images/bugs-life.jpeg" alt="A Bug's Life" />
+      <img src="images/thor.jpeg" alt="Thor" />
+    </div>
+
+    <!-- search bar: genre + text input + search button -->
+    <div class="search-bar">
+      <select id="genreSelect" aria-label="Vyhledávací žánr">
+        <option value="">— Vyber žánr —</option>
+        <option value="action">Akční</option>
+        <option value="comedy">Komedie</option>
+        <option value="animation">Animované</option>
+        <option value="horror">Horor</option>
+        <option value="romance">Romantické</option>
+        <option value="drama">Drama</option>
+      </select>
+      <input id="searchInput" type="text" placeholder="Zadej název filmu/seriálu">
+      <button class="btn-red" id="searchBtn">Hledat</button>
+    </div>
+
+    <!-- CTA like screenshot -->
+    <div class="more-wrap">
+      <button class="btn-red btn-large" id="moreBtn">Najít další filmy</button>
+    </div>
+
+    <!-- grid for API results or offline fallback -->
+    <div id="moviesGrid" class="movies-grid" hidden role="region" aria-live="polite" aria-label="Výsledky vyhledávání filmů"></div>
+  </section>
+
+  <!-- REGISTER -->
+  <section id="register" class="section register" hidden>
+    <div class="register-wrap">
+      <form id="regForm" novalidate>
+        <input type="text" id="firstName" placeholder="Křestní jméno" required />
+        <input type="text" id="lastName" placeholder="Příjmení" required />
+        <input type="email" id="email" placeholder="Přihlašovací email" required />
+        <input type="password" id="password" placeholder="Vaše heslo" minlength="6" required />
+        <input type="password" id="confirm" placeholder="Heslo znovu" minlength="6" required />
+        <button type="submit" class="btn btn-submit">Odeslat</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER (flex) -->
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="#">Často kladené dotazy</a>
+      <a href="#">Vztahy s investory</a>
+      <a href="#">Jak se dívat</a>
+      <a href="#">Podnikové informace</a>
+      <a href="#">Právní oznámení</a>
+      <a href="#">Centrum zákaznické podpory</a>
+      <a href="#">Kariéra</a>
+      <a href="#">Podmínky používání</a>
+      <a href="#">Kontaktujte nás</a>
+      <a href="#">Uvádí jedině Netflix</a>
+      <a href="#">Účet</a>
+      <a href="#">Uplatněte dárkové poukazy</a>
+      <a href="#">Soukromí</a>
+      <a href="#">Test rychlosti</a>
+      <a href="#">Reklamy</a>
+      <a href="#">Pro média</a>
+      <a href="#">Koupit dárkové poukazy</a>
+      <a href="#">Nastavení souborů cookie</a>
+      <a href="#">Právní záruka</a>
+    </div>
+  </footer>
+
+  <!-- Scroll-to-top -->
+  <button id="scrollTopBtn" class="scroll-top" title="Nahoru">
+    <img src="images/scroll-up.png" alt="Nahoru">
+  </button>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
