@@ -1,12 +1,28 @@
-// script.ts – SPA s rozšířeným vyhledáváním a offline fallbackem na lokální postery
 
+/**
+ * Small interfaces representing the API response shapes.
+ */
+
+/** Image object returned by the API (only medium size used). */
 interface ShowImage { medium: string; }
+
+/** Search result item returned by the TVMaze API. */
 interface ShowData { show: { name: string; image: ShowImage | null } }
+
+/** Valid application sections. */
 type SectionId = 'home' | 'movies' | 'register';
 
+/**
+ * Ensure URLs use https when possible.
+ * @param url - The URL to normalize.
+ * @returns The normalized URL or undefined if input is falsy.
+ */
 const normalizeHttps = (url?: string) => url ? url.replace(/^http:\/\//, 'https://') : undefined;
+
+/** Local placeholder image used when no poster is available. */
 const LOCAL_PLACEHOLDER = 'images/movies-bg.jpeg';
 
+/** Mapping of normalized movie title keys to local poster filenames. */
 const localPosters: Record<string, string> = {
   'avengers': 'avengers.jpg',
   'batman': 'batman.webp',
@@ -23,10 +39,24 @@ const localPosters: Record<string, string> = {
   'thor': 'thor.jpeg'
 };
 
+/** Offline catalog derived from localPosters for quick rendering. */
 const offlineCatalog: Array<{ title: string; file: string }> = Object.entries(localPosters)
   .map(([k, f]) => ({ title: k, file: f }));
 
+/**
+ * Normalize a movie/show name into a lookup key.
+ * Removes punctuation, collapses whitespace and lowercases the name.
+ * @param name - The movie/show name to normalize.
+ * @returns The normalized key.
+ */
 const toKey = (name: string) => name.toLowerCase().replace(/[:!.,']/g, '').replace(/\s+/g, ' ').trim();
+
+/**
+ * Attempt to find a local poster path for a given title.
+ * First tries exact key match, then checks if any catalog key is contained in the title.
+ * @param title - The movie/show title to match.
+ * @returns Relative path to a local image or undefined if none found.
+ */
 const findLocalPoster = (title: string): string | undefined => {
   const key = toKey(title);
   if (localPosters[key]) return `images/${localPosters[key]}`;
@@ -34,11 +64,17 @@ const findLocalPoster = (title: string): string | undefined => {
   return undefined;
 };
 
+/**
+ * Main application controller handling routing, movie search and the register form.
+ */
 class App {
   private sections: Record<SectionId, HTMLElement | null> = { home: null, movies: null, register: null };
   private moviesGrid!: HTMLElement;
   private currentFetchController: AbortController | null = null;
 
+  /**
+   * Initialize element references and wire up features.
+   */
   constructor() {
     this.sections.home = document.getElementById('home');
     this.sections.movies = document.getElementById('movies');
@@ -46,6 +82,9 @@ class App {
     this.init();
   }
 
+  /**
+   * Set up routing, UI helpers and initialize features.
+   */
   private init(): void {
     this.setupRouting();
     this.setupScrollTop();
@@ -55,6 +94,11 @@ class App {
     this.showSection(initial);
   }
 
+  /**
+   * Show a given app section and hide others.
+   * Updates the URL hash except for the home section which clears the hash.
+   * @param id - Section identifier to display.
+   */
   private showSection(id: SectionId): void {
     (Object.keys(this.sections) as SectionId[]).forEach(key => {
       const el = this.sections[key];
@@ -65,6 +109,9 @@ class App {
     else location.hash = id;
   }
 
+  /**
+   * Wire click handlers for elements with data-target to perform section navigation.
+   */
   private setupRouting(): void {
     document.querySelectorAll('[data-target]').forEach(el => {
       el.addEventListener('click', (e) => {
@@ -79,6 +126,9 @@ class App {
     });
   }
 
+  /**
+   * Show a "scroll to top" button when the page is scrolled down and wire its click behavior.
+   */
   private setupScrollTop(): void {
     const btn = document.getElementById('scrollTopBtn') as HTMLButtonElement | null;
     if (!btn) return;
@@ -88,6 +138,9 @@ class App {
     btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
+  /**
+   * Initialize movie search UI and behavior including offline fallback and debounced live search.
+   */
   private initMoviesFeatures(): void {
     const grid = document.getElementById('moviesGrid') as HTMLElement | null;
     const featured = document.getElementById('featuredRow') as HTMLElement | null;
@@ -98,6 +151,9 @@ class App {
     if (!grid) return;
     this.moviesGrid = grid;
 
+    /**
+     * Render the bundled offline catalog into the grid.
+     */
     const renderOffline = () => {
       if (featured && !featured.hidden) featured.hidden = true;
       this.moviesGrid.hidden = false;
@@ -111,6 +167,11 @@ class App {
       });
     };
 
+    /**
+     * Perform a search against the TVMaze API and render results.
+     * Falls back to the offline catalog if the API is unavailable or returns no results.
+     * @param q - Query string to search for.
+     */
     const runSearch = async (q: string) => {
       if (!q) { renderOffline(); return; }
       if (featured && !featured.hidden) featured.hidden = true;
@@ -163,6 +224,11 @@ class App {
     });
   }
 
+  /**
+   * Render an array of show results into the movies grid.
+   * Chooses the best available image: API -> local poster -> placeholder.
+   * @param shows - Array of API show results to render.
+   */
   private renderShows(shows: ShowData[]): void {
     this.moviesGrid.innerHTML = '';
     shows.forEach(({ show }) => {
@@ -177,6 +243,12 @@ class App {
     });
   }
 
+  /**
+   * Create a debounced version of a function.
+   * @param fn - Function to debounce.
+   * @param ms - Delay in milliseconds.
+   * @returns Debounced function with original signature.
+   */
   private debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
     let timeoutId: number | undefined;
     return ((...args: any[]) => {
@@ -185,6 +257,10 @@ class App {
     }) as T;
   }
 
+  /**
+   * Initialize register form validation and interactions.
+   * Adds simple client-side validation and visual error markers.
+   */
   private initRegisterFeatures(): void {
     const form = document.getElementById('regForm') as HTMLFormElement | null;
     const first = document.getElementById('firstName') as HTMLInputElement | null;
