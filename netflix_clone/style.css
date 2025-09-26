@@ -145,6 +145,8 @@ body {
 .register::before {
   content: ""; position: absolute; inset:0;
   background: rgba(0,0,0,0.65);
+
+  
 }
 .register-wrap { position: relative; max-width: 780px; margin: 0 auto; padding: 3rem 1rem; }
 #regForm {
@@ -168,6 +170,24 @@ body {
 #regForm input::placeholder { color: rgba(255,255,255,0.85); }
 #regForm input:focus { border-color: #fff; }
 #regForm .error { border-color: var(--red) !important; }
+.btn-submit {
+  background: var(--red);
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 2px;
+  padding: 12px 18px;
+  width: 100%;
+  cursor: pointer;
+}
+/* ✅ Validace registrace */
+#regForm input.valid {
+  border-color: green !important;
+}
+#regForm input.invalid {
+  border-color: red !important;
+}
+
 .btn-submit {
   background: var(--red);
   color: #fff;
