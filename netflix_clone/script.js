@@ -1,4 +1,13 @@
-// script.ts – netflix clone
+
+/**
+ * Compiled JS from script.ts. Adds client-side navigation, search against TVMaze API,
+ * offline local poster rendering and simple registration form validation.
+ */
+
+/**
+ * Tiny helper emitted by TypeScript to emulate async/await in ES5/ES2017 output.
+ * Keeps generator and promise plumbing intact for async functions.
+ */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,6 +17,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+
+/**
+ * TypeScript generator helper used by __awaiter.
+ * Implements the generator state machine used by compiled async code.
+ */
 var __generator = (this && this.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
     return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
@@ -27,7 +41,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
                     if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
                     if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
                     if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
+                    if (t[2]) _.trys.pop();
                     _.trys.pop(); continue;
             }
             op = body.call(thisArg, _);
@@ -35,8 +49,18 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+
+ /**
+  * Normalize image URLs to use https when possible.
+  * @param {string|undefined} url - The URL to normalize.
+  * @returns {string|undefined} Normalized URL or undefined if falsy.
+  */
 var normalizeHttps = function (url) { return url ? url.replace(/^http:\/\//, 'https://') : undefined; };
+
+/** Local placeholder asset path for missing posters. */
 var LOCAL_PLACEHOLDER = 'images/movies-bg.jpeg';
+
+/** Map of normalized titles to bundled poster filenames. */
 var localPosters = {
     'avengers': 'avengers.jpg',
     'batman': 'batman.webp',
@@ -52,12 +76,28 @@ var localPosters = {
     'the incredibles': 'the-incredibles.jpeg',
     'thor': 'thor.jpeg'
 };
+
+/** Offline catalog derived from localPosters for quick rendering. */
 var offlineCatalog = Object.entries(localPosters)
     .map(function (_a) {
     var k = _a[0], f = _a[1];
     return ({ title: k, file: f });
 });
+
+/**
+ * Normalize a movie/show name into a lookup key.
+ * Removes punctuation, collapses whitespace and lowercases the name.
+ * @param {string} name - Name to normalize.
+ * @returns {string} Normalized key.
+ */
 var toKey = function (name) { return name.toLowerCase().replace(/[:!.,']/g, '').replace(/\s+/g, ' ').trim(); };
+
+/**
+ * Attempt to find a local poster path for a given title.
+ * Tries exact key match, then substring match, else returns undefined.
+ * @param {string} title - Show title.
+ * @returns {string|undefined} Relative image path or undefined.
+ */
 var findLocalPoster = function (title) {
     var key = toKey(title);
     if (localPosters[key])
@@ -69,6 +109,11 @@ var findLocalPoster = function (title) {
     }
     return undefined;
 };
+
+/**
+ * Main application controller.
+ * Handles routing, search, offline rendering and registration form validation.
+ */
 var App = /** @class */ (function () {
     function App() {
         this.sections = { home: null, movies: null, register: null };
@@ -78,6 +123,9 @@ var App = /** @class */ (function () {
         this.sections.register = document.getElementById('register');
         this.init();
     }
+    /**
+     * Initialize routing, UI helpers and feature modules.
+     */
     App.prototype.init = function () {
         this.setupRouting();
         this.setupScrollTop();
@@ -86,6 +134,11 @@ var App = /** @class */ (function () {
         var initial = location.hash.replace('#', '') || 'home';
         this.showSection(initial);
     };
+    /**
+     * Display the requested section and hide others.
+     * Updates URL hash except when showing 'home' which clears the hash.
+     * @param {string} id - Section id to show.
+     */
     App.prototype.showSection = function (id) {
         var _this = this;
         Object.keys(this.sections).forEach(function (key) {
@@ -99,6 +152,9 @@ var App = /** @class */ (function () {
         else
             location.hash = id;
     };
+    /**
+     * Wire navigation elements (data-target) to section changes and handle hash changes.
+     */
     App.prototype.setupRouting = function () {
         var _this = this;
         document.querySelectorAll('[data-target]').forEach(function (el) {
@@ -114,6 +170,9 @@ var App = /** @class */ (function () {
             _this.showSection(id);
         });
     };
+    /**
+     * Show a scroll-to-top button when scrolled and wire its click action.
+     */
     App.prototype.setupScrollTop = function () {
         var btn = document.getElementById('scrollTopBtn');
         if (!btn)
@@ -123,6 +182,10 @@ var App = /** @class */ (function () {
         });
         btn.addEventListener('click', function () { return window.scrollTo({ top: 0, behavior: 'smooth' }); });
     };
+    /**
+     * Initialize movie search UI, including debounced typing search and offline fallback.
+     * Registers handlers for search, more results and input events.
+     */
     App.prototype.initMoviesFeatures = function () {
         var _this = this;
         var grid = document.getElementById('moviesGrid');
@@ -134,6 +197,9 @@ var App = /** @class */ (function () {
         if (!grid)
             return;
         this.moviesGrid = grid;
+        /**
+         * Render the bundled offline catalog into the grid.
+         */
         var renderOffline = function () {
             if (featured && !featured.hidden)
                 featured.hidden = true;
@@ -148,6 +214,11 @@ var App = /** @class */ (function () {
                 _this.moviesGrid.appendChild(img);
             });
         };
+        /**
+         * Run a search against TVMaze API and render results.
+         * Falls back to offline catalog on network/API errors or empty results.
+         * @param {string} q - Query string.
+         */
         var runSearch = function (q) { return __awaiter(_this, void 0, void 0, function () {
             var controller, res, data, err_1;
             var _a;
@@ -222,6 +293,11 @@ var App = /** @class */ (function () {
             }
         });
     };
+    /**
+     * Render an array of show results into the movies grid.
+     * Chooses API image, then local poster, then placeholder.
+     * @param {Array} shows - API results array.
+     */
     App.prototype.renderShows = function (shows) {
         var _this = this;
         this.moviesGrid.innerHTML = '';
@@ -238,6 +314,12 @@ var App = /** @class */ (function () {
             _this.moviesGrid.appendChild(img);
         });
     };
+    /**
+     * Create a debounced version of a function.
+     * @param {Function} fn - Function to debounce.
+     * @param {number} ms - Debounce delay in ms.
+     * @returns {Function} Debounced function.
+     */
     App.prototype.debounce = function (fn, ms) {
         var timeoutId;
         return (function () {
@@ -250,6 +332,10 @@ var App = /** @class */ (function () {
             timeoutId = window.setTimeout(function () { return fn.apply(void 0, args); }, ms);
         });
     };
+    /**
+     * Initialize register form validation and interactions.
+     * Adds simple client-side validation and visual error markers.
+     */
     App.prototype.initRegisterFeatures = function () {
         var form = document.getElementById('regForm');
         var first = document.getElementById('firstName');
@@ -297,3 +383,4 @@ var App = /** @class */ (function () {
     return App;
 }());
 window.addEventListener('DOMContentLoaded', function () { return new App(); });
+
