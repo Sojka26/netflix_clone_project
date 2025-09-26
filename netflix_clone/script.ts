@@ -1,28 +1,36 @@
 
-/**
- * Small interfaces representing the API response shapes.
- */
+// script.ts - main application script
 
-/** Image object returned by the API (only medium size used). */
+/**
+ * Image object returned by the TVMaze API (only `medium` size is used).
+ */
 interface ShowImage { medium: string; }
 
-/** Search result item returned by the TVMaze API. */
+/**
+ * Single search result item shape returned by TVMaze:
+ * an object with a `show` property containing name and image.
+ */
 interface ShowData { show: { name: string; image: ShowImage | null } }
 
-/** Valid application sections. */
+/**
+ * Valid application sections used for routing and showing/hiding UI panels.
+ */
 type SectionId = 'home' | 'movies' | 'register';
 
 /**
- * Ensure URLs use https when possible.
- * @param url - The URL to normalize.
- * @returns The normalized URL or undefined if input is falsy.
+ * Normalize a possibly-HTTP URL to HTTPS when possible.
+ * @param url - The URL to normalize (may be undefined).
+ * @returns The normalized URL or undefined when input is falsy.
  */
 const normalizeHttps = (url?: string) => url ? url.replace(/^http:\/\//, 'https://') : undefined;
 
 /** Local placeholder image used when no poster is available. */
 const LOCAL_PLACEHOLDER = 'images/movies-bg.jpeg';
 
-/** Mapping of normalized movie title keys to local poster filenames. */
+/**
+ * Mapping of normalized movie/show title keys to local poster filenames.
+ * Used as an offline catalog fallback.
+ */
 const localPosters: Record<string, string> = {
   'avengers': 'avengers.jpg',
   'batman': 'batman.webp',
@@ -39,23 +47,23 @@ const localPosters: Record<string, string> = {
   'thor': 'thor.jpeg'
 };
 
-/** Offline catalog derived from localPosters for quick rendering. */
+/** Simple array form of the local poster catalog for easy rendering. */
 const offlineCatalog: Array<{ title: string; file: string }> = Object.entries(localPosters)
   .map(([k, f]) => ({ title: k, file: f }));
 
 /**
- * Normalize a movie/show name into a lookup key.
- * Removes punctuation, collapses whitespace and lowercases the name.
- * @param name - The movie/show name to normalize.
- * @returns The normalized key.
+ * Create a normalized lookup key from a movie/show title.
+ * Removes common punctuation, collapses whitespace and lowercases the string.
+ * @param name - Original title/name.
+ * @returns Normalized key suitable for lookup in localPosters.
  */
 const toKey = (name: string) => name.toLowerCase().replace(/[:!.,']/g, '').replace(/\s+/g, ' ').trim();
 
 /**
- * Attempt to find a local poster path for a given title.
- * First tries exact key match, then checks if any catalog key is contained in the title.
- * @param title - The movie/show title to match.
- * @returns Relative path to a local image or undefined if none found.
+ * Try to resolve a local poster path for a given title.
+ * Attempts exact key match first, then substring matches against catalog keys.
+ * @param title - Show/movie title to match.
+ * @returns Relative image path (e.g. 'images/xyz.jpg') or undefined if not found.
  */
 const findLocalPoster = (title: string): string | undefined => {
   const key = toKey(title);
@@ -65,7 +73,8 @@ const findLocalPoster = (title: string): string | undefined => {
 };
 
 /**
- * Main application controller handling routing, movie search and the register form.
+ * Main application controller.
+ * Handles routing, movie search with offline fallback, and registration form validation.
  */
 class App {
   private sections: Record<SectionId, HTMLElement | null> = { home: null, movies: null, register: null };
@@ -73,7 +82,7 @@ class App {
   private currentFetchController: AbortController | null = null;
 
   /**
-   * Initialize element references and wire up features.
+   * Gather initial element references and bootstrap the app.
    */
   constructor() {
     this.sections.home = document.getElementById('home');
@@ -83,7 +92,7 @@ class App {
   }
 
   /**
-   * Set up routing, UI helpers and initialize features.
+   * Initialize routing, UI helpers and feature modules.
    */
   private init(): void {
     this.setupRouting();
@@ -95,8 +104,8 @@ class App {
   }
 
   /**
-   * Show a given app section and hide others.
-   * Updates the URL hash except for the home section which clears the hash.
+   * Show the requested section and hide others.
+   * Updates the URL: clears the hash for 'home', otherwise sets the hash.
    * @param id - Section identifier to display.
    */
   private showSection(id: SectionId): void {
@@ -110,7 +119,7 @@ class App {
   }
 
   /**
-   * Wire click handlers for elements with data-target to perform section navigation.
+   * Wire elements with `data-target` to section navigation and handle hash changes.
    */
   private setupRouting(): void {
     document.querySelectorAll('[data-target]').forEach(el => {
@@ -140,6 +149,7 @@ class App {
 
   /**
    * Initialize movie search UI and behavior including offline fallback and debounced live search.
+   * Registers handlers for search, more results and input events.
    */
   private initMoviesFeatures(): void {
     const grid = document.getElementById('moviesGrid') as HTMLElement | null;
@@ -178,7 +188,6 @@ class App {
       this.moviesGrid.hidden = false;
       this.moviesGrid.innerHTML = '';
       this.moviesGrid.setAttribute('aria-busy', 'true');
-      // Abort previous request
       try {
         this.currentFetchController?.abort();
       } catch {}
@@ -194,7 +203,7 @@ class App {
         }
         this.renderShows(data);
       } catch (err) {
-        if ((err as any)?.name === 'AbortError') return; // superseded
+        if ((err as any)?.name === 'AbortError') return;
         console.warn('API nedostupné, zobrazím offline katalog:', err);
         renderOffline();
       } finally {
@@ -202,13 +211,16 @@ class App {
       }
     };
 
+    /**
+     * Resolve the current query from the search input or selected genre.
+     * @returns Resolved query string.
+     */
     const resolveQuery = () => {
       const text = (searchInput?.value || '').trim();
       if (text) return text;
       return genreSelect?.value || 'girl';
     };
 
-    // Debounced live search on typing (3+ chars)
     const debounced = this.debounce((value: string) => {
       if (value.trim().length >= 3) runSearch(value.trim());
     }, 350);
@@ -247,7 +259,7 @@ class App {
    * Create a debounced version of a function.
    * @param fn - Function to debounce.
    * @param ms - Delay in milliseconds.
-   * @returns Debounced function with original signature.
+   * @returns Debounced function with the same signature as `fn`.
    */
   private debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
     let timeoutId: number | undefined;
@@ -270,28 +282,43 @@ class App {
     const confirm = document.getElementById('confirm') as HTMLInputElement | null;
     if (!form || !first || !last || !email || !pw || !confirm) return;
 
-    const clearError = (el: HTMLInputElement) => el.classList.remove('error');
-    const setError = (el: HTMLInputElement) => el.classList.add('error');
+    const clearState = (el: HTMLInputElement) => el.classList.remove('error', 'valid', 'invalid');
+    const setError = (el: HTMLInputElement) => { el.classList.add('invalid'); el.classList.remove('valid'); };
+    const setValid = (el: HTMLInputElement) => { el.classList.add('valid'); el.classList.remove('invalid'); };
 
     const validatePasswords = () => {
-      clearError(pw); clearError(confirm);
-      if (pw.value && confirm.value && pw.value !== confirm.value) { setError(pw); setError(confirm); }
+      clearState(pw); clearState(confirm);
+      if (pw.value && confirm.value) {
+        if (pw.value === confirm.value) {
+          setValid(pw); setValid(confirm);
+        } else {
+          setError(pw); setError(confirm);
+        }
+      }
     };
 
     form.addEventListener('input', (e) => {
       const t = e.target as HTMLInputElement;
-      clearError(t);
+      clearState(t);
       if (t === pw || t === confirm) validatePasswords();
     });
 
     form.addEventListener('submit', (e) => {
+      e.preventDefault();
       let valid = true;
-      [first, last, email, pw, confirm].forEach((el) => { if (!el.value.trim()) { setError(el); valid = false; } });
+      [first, last, email, pw, confirm].forEach((el) => {
+        if (!el.value.trim()) { setError(el); valid = false; }
+      });
       if (email.value && !email.checkValidity()) { setError(email); valid = false; }
       if (pw.value !== confirm.value) { setError(pw); setError(confirm); valid = false; }
-      if (!valid) e.preventDefault();
+
+      if (valid) {
+        alert("Registrace úspěšná!");
+        this.showSection("movies");
+      }
     });
   }
 }
 
 window.addEventListener('DOMContentLoaded', () => new App());
+
